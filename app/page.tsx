@@ -189,7 +189,7 @@ export default function Home() {
     return ({ transform }: { transform: any }) => {
       return {
         ...transform,
-        x: transform.x / scale,“
+        x: transform.x / scale,
         y: transform.y / scale,
       };
     };
