@@ -3,62 +3,40 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { title, parentNodeId, ordering } = await request.json();
+    const { title, parentNodeId } = await request.json();
 
-    const missingFields = [];
-    if (!parentNodeId) missingFields.push("parentNodeId");
-    if (!ordering) missingFields.push("ordering");
-
-    if (missingFields.length > 0) {
+    if (!title || !parentNodeId) {
       return NextResponse.json(
-        {
-          error: `Missing ${missingFields.join(", ")} required field${
-            missingFields.length > 1 ? "s" : ""
-          }.`,
-        },
+        { error: "Missing title or parentNodeId." },
         { status: 400 }
       );
     }
 
-    const existingNode = await prisma.node.findFirst({
-      where: {
-        parentNodeId,
-        ordering,
-      },
-    });
-
-    if (existingNode) {
-      return NextResponse.json(
-        { error: "This node already exists." },
-        { status: 409 }
-      );
-    }
-
     const parentNode = await prisma.node.findUnique({
-      where: {
-        id: parentNodeId,
-      },
+      where: { id: parentNodeId },
+      include: { children: true },
     });
 
     if (!parentNode) {
       return NextResponse.json(
-        { error: `Parent node with ID of ${parentNodeId} doesn't exist.` },
-        { status: 409 }
+        { error: `Parent node with ID ${parentNodeId} not found.` },
+        { status: 404 }
       );
     }
 
+    const nextOrdering = parentNode.children.length + 1;
+
     const newNode = await prisma.node.create({
       data: {
-        title,
-        parentNodeId,
+        title: title.trim(),
+        parentNodeId: parentNodeId,
         depth: parentNode.depth + 1,
-        ordering: ordering,
+        ordering: nextOrdering,
       },
     });
 
     return NextResponse.json(newNode, { status: 201 });
   } catch (error) {
-    console.error(error);
     return NextResponse.json(
       { error: "Failed to create node" },
       { status: 500 }
@@ -81,7 +59,6 @@ export async function GET(request: NextRequest) {
       status: 200,
     });
   } catch (error) {
-    console.error("Pagination Error:", error);
     return NextResponse.json(
       { error: "Failed to fetch level range" },
       { status: 500 }

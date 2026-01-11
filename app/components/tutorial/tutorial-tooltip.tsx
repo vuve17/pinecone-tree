@@ -6,6 +6,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MouseIcon from '@mui/icons-material/Mouse';
 import PanToolIcon from '@mui/icons-material/PanTool';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import {
   Box,
   Button,
@@ -71,12 +72,12 @@ export const HelpInstructionsTooltip = () => {
         <DialogContent dividers>
           <Box sx={{ mb: 4 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
-              What is this Binary Tree?
+              What is this Workspace?
             </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.6 }} color="text.secondary">
-              A <strong>Binary Tree</strong> is a hierarchical structure where each node has at most
-              two children: a <strong>Left Child</strong> and a <strong>Right Child</strong>.
-              The structure starts from a single Root node.
+              This is a <strong>General Tree</strong> editor. Unlike a binary tree, each node can have
+              an <strong>unlimited number of children</strong>. You can build complex hierarchies by
+              simply attaching nodes to one another.
             </Typography>
           </Box>
 
@@ -89,13 +90,43 @@ export const HelpInstructionsTooltip = () => {
           <List sx={{ gap: 2, display: 'flex', flexDirection: 'column' }}>
             <ListItem alignItems="flex-start" disableGutters>
               <ListItemIcon sx={{ minWidth: 50 }}>
-                <EditIcon fontSize="large" color="primary" />
+                <PanToolIcon fontSize="large" color="primary" />
+              </ListItemIcon>
+              <ListItemText
+                primary={<Typography variant="h6" fontWeight="bold">Drag & Drop (Re-parenting)</Typography>}
+                secondary={
+                  <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Drag any node and <strong>drop it directly onto another node</strong> to attach it as a child.
+                    The entire subtree moves with it!
+                  </Typography>
+                }
+              />
+            </ListItem>
+
+            <ListItem alignItems="flex-start" disableGutters>
+              <ListItemIcon sx={{ minWidth: 50 }}>
+                <SwapHorizIcon fontSize="large" color="secondary" />
+              </ListItemIcon>
+              <ListItemText
+                primary={<Typography variant="h6" fontWeight="bold">Horizontal Reordering</Typography>}
+                secondary={
+                  <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Hover over a node to reveal <strong>Left/Right arrows</strong>.
+                    Use these to change the sequence of siblings under the same parent.
+                  </Typography>
+                }
+              />
+            </ListItem>
+
+            <ListItem alignItems="flex-start" disableGutters>
+              <ListItemIcon sx={{ minWidth: 50 }}>
+                <EditIcon fontSize="large" color="action" />
               </ListItemIcon>
               <ListItemText
                 primary={<Typography variant="h6" fontWeight="bold">Inline Editing</Typography>}
                 secondary={
                   <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Hover over node and click edit icon. Type your new name (1-20 chars).
+                    Click the edit icon on a hovered node to rename it.
                     Press <strong>&apos;Enter&apos;</strong> to save or <strong>&apos;Esc&apos;</strong> to cancel.
                   </Typography>
                 }
@@ -110,7 +141,7 @@ export const HelpInstructionsTooltip = () => {
                 primary={<Typography variant="h6" fontWeight="bold">Node Deletion</Typography>}
                 secondary={
                   <Typography variant="body1" color="error.main" sx={{ mt: 0.5, fontWeight: 500 }}>
-                    Careful! Deleting a node will <strong>permanently remove all of its children</strong> (the entire sub-tree).
+                    Careful! Deleting a node will <strong>permanently remove all of its children</strong>.
                   </Typography>
                 }
               />
@@ -121,25 +152,11 @@ export const HelpInstructionsTooltip = () => {
                 <MouseIcon fontSize="large" color="action" />
               </ListItemIcon>
               <ListItemText
-                primary={<Typography variant="h6" fontWeight="bold">Navigation (Zoom & Pan)</Typography>}
+                primary={<Typography variant="h6" fontWeight="bold">Navigation</Typography>}
                 secondary={
                   <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Use the <strong>mouse scroll wheel</strong> to zoom in and out.
-                    <strong> Click and hold</strong> the left mouse button on the background to drag the canvas.
-                  </Typography>
-                }
-              />
-            </ListItem>
-
-            <ListItem alignItems="flex-start" disableGutters>
-              <ListItemIcon sx={{ minWidth: 50 }}>
-                <PanToolIcon fontSize="large" color="secondary" />
-              </ListItemIcon>
-              <ListItemText
-                primary={<Typography variant="h6" fontWeight="bold" >Navigation (Zoom & Pan)</Typography>}
-                secondary={
-                  <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-                    You can <strong>Drag & Drop</strong> nodes to reattach them to different parents!
+                    Use the <strong>scroll wheel</strong> to zoom.
+                    <strong> Click and hold</strong> the background to pan across the workspace.
                   </Typography>
                 }
               />

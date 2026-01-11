@@ -1,10 +1,12 @@
+```bash
+
 🌳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━🌳
-        Binary Tree Manager
+        Regular Tree Manager
 🌳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━🌳
 
 📌 **Overview**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-A full-stack application for visualizing and managing hierarchical data structures using **Binary Tree logic**.
+A full-stack application for visualizing and managing hierarchical data structures using ** Tree logic**.
 
 🧩 **Tech Stack**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -16,6 +18,50 @@ A full-stack application for visualizing and managing hierarchical data structur
 🚀 Getting Started
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Follow the steps below to get the project running on your local machine.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔵 API Endpoints
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The application utilizes a RESTful API built on Next.js Route Handlers. All endpoints return JSON responses.
+
+## 1. Nodes (Collection)
+**Base path:** `/api/nodes`
+
+Used for working with the full nodes collection and building the initial tree structure.
+
+| Method | Endpoint      | Purpose |
+|------:|---------------|---------|
+| GET   | `/api/nodes`  | Fetches all nodes from the database to initially build the tree structure. |
+| POST  | `/api/nodes`  | Creates a new node. Automatically calculates the ordering (appends to the end of the children list) and sets the depth relative to the parent.
+
+
+## 2. Individual Node
+
+**Base path:** `/api/nodes/:id`
+
+| Method | Endpoint         | Purpose |
+|------:|------------------|---------|
+| GET   | `/api/nodes/:id` | Fetches detailed information about a specific node. |
+| PATCH | `/api/nodes/:id` | Updates basic node fields (e.g. renaming the title). |
+| DELETE| `/api/nodes/:id` | Deletes the node and recursively removes its entire sub-tree (`onDelete: Cascade`). |
+
+## 3. Drag & Drop (Grafting)
+
+**Base path:** `/api/nodes/:id/reattach`
+
+| Method | Endpoint                  | Purpose |
+|------:|---------------------------|---------|
+| PATCH | `/api/nodes/:id/reattach` | Moves a node and its children under a new parent. |
+
+
+## 4. Horizontal Movement (Sibling Reordering)
+
+**Base path:** `/api/nodes/:id/shift`
+
+| Method | Endpoint               | Purpose |
+|------:|------------------------|---------|
+| PATCH | `/api/nodes/:id/shift` | Swaps the ordering value with the immediate sibling in the specified direction. |
+
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🧰 1. Prerequisites
@@ -30,9 +76,6 @@ Before you begin, make sure you have the following installed:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Open your terminal in the project root directory and run the commands below **in order**.
 
-
-
-```bash
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📦 A. Install Dependencies

@@ -1,34 +1,43 @@
 "use client";
 
-import { BinaryNode } from '@/app/types/binary-node.interface';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { Box, Stack } from '@mui/material';
 import { Node } from '@prisma/client';
-import React from 'react';
-import { NodePlaceholder } from './placeholder-node';
+import React, { useMemo } from 'react';
 import { TreeNode } from './tree-node';
 
 interface RecursiveTreeProps {
-  treeNode: BinaryNode;
+  currentNode: Node;
+  allNodes: Node[];
   onEdit: (id: number, title: string) => void;
   onDelete: (node: Node) => void;
-  onAddChild: (parentId: number, ordering: number, title: string) => void;
+  onAddChild: (parentId: number, title: string) => void;
+  onMoveOrder: (nodeId: number, direction: -1 | 1) => void;
   isRoot?: boolean;
   isThisNodeBeingDragged?: Node | null;
 }
 
 export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
-  treeNode,
+  currentNode,
+  allNodes,
   onEdit,
   onDelete,
   onAddChild,
+  onMoveOrder,
   isRoot = true,
   isThisNodeBeingDragged = null
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: treeNode.id,
-    data: { ...treeNode }
+    id: currentNode.id,
+    data: { ...currentNode }
   });
+
+  const children = useMemo(() => {
+    return allNodes
+      .filter(n => n.parentNodeId === currentNode.id)
+      .sort((a, b) => a.ordering - b.ordering);
+  }, [allNodes, currentNode.id]);
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -36,74 +45,92 @@ export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
     position: 'relative' as const,
   };
 
-  const amIBeingDragged = isDragging || (isThisNodeBeingDragged?.id === treeNode.id);
-  const shouldShowPlaceholders = isThisNodeBeingDragged !== null && !amIBeingDragged;
-  const hasChildren = treeNode.leftChild || treeNode.rightChild;
-  const showVerticalLine = hasChildren || shouldShowPlaceholders;
+  const amIBeingDragged = isDragging || (isThisNodeBeingDragged?.id === currentNode.id);
+  const hasChildren = children.length > 0;
+  const showVerticalLine = hasChildren && !amIBeingDragged;
 
   const NodeAndChildren = (
-    <div ref={setNodeRef} style={style} className="flex flex-col items-center">
-      <div className="flex flex-col items-center tree-node-group">
+    <Box
+      ref={setNodeRef}
+      style={style}
+      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+    >
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
         <TreeNode
-          node={treeNode}
+          node={currentNode}
           onEdit={onEdit}
           onDelete={onDelete}
           onAddChild={onAddChild}
-          canAddLeftChild={!treeNode.leftChild}
-          canAddRightChild={!treeNode.rightChild}
+          onMoveOrder={onMoveOrder}
           dragHandleProps={{ ...attributes, ...listeners }}
           isDraggingInternally={isDragging}
         />
-        {showVerticalLine && <div className="tree-v-line"></div>}
-      </div>
+        {showVerticalLine && <Box sx={{ width: '1px', height: 32, bgcolor: 'grey.300' }} />}
+      </Box>
 
       {showVerticalLine && (
-        <ul className={isDragging ? "opacity-100" : ""}>
-          <li className={!treeNode.leftChild ? "placeholder-slot" : ""}>
-            {treeNode.leftChild ? (
-              <RecursiveTree
-                treeNode={treeNode.leftChild}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onAddChild={onAddChild}
-                isRoot={false}
-                isThisNodeBeingDragged={amIBeingDragged ? null : isThisNodeBeingDragged}
-              />
-            ) : isThisNodeBeingDragged ? (
-              <NodePlaceholder parentNodeId={treeNode.id} ordering={2} />
-            ) : (
-              <div className="w-48 h-24 invisible"></div>
-            )}
-          </li>
+        <Box sx={{ position: 'relative' }}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'calc(100% - 192px)',
+              height: '1px',
+              bgcolor: 'grey.300'
+            }}
+          />
 
-          <li className={!treeNode.rightChild ? "placeholder-slot" : ""}>
-            {treeNode.rightChild ? (
-              <RecursiveTree
-                treeNode={treeNode.rightChild}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onAddChild={onAddChild}
-                isRoot={false}
-                isThisNodeBeingDragged={amIBeingDragged ? null : isThisNodeBeingDragged}
-              />
-            ) : isThisNodeBeingDragged ? (
-              <NodePlaceholder parentNodeId={treeNode.id} ordering={1} />
-            ) : (
-              <div className="w-48 h-24 invisible"></div>
-            )}
-          </li>
-        </ul>
+          <Stack
+            direction="row"
+            justifyContent="center"
+            spacing={4}
+            sx={{
+              opacity: isDragging ? 0 : 1,
+              pointerEvents: isDragging ? 'none' : 'auto'
+            }}
+          >
+            {children.map((child) => (
+              <Box key={child.id} sx={{ position: 'relative', pt: 4 }}>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '1px',
+                    height: 32,
+                    bgcolor: 'grey.300'
+                  }}
+                />
+                <RecursiveTree
+                  currentNode={child}
+                  allNodes={allNodes}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onAddChild={onAddChild}
+                  onMoveOrder={onMoveOrder}
+                  isRoot={false}
+                  isThisNodeBeingDragged={amIBeingDragged ? currentNode : isThisNodeBeingDragged}
+                />
+              </Box>
+            ))}
+          </Stack>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 
   if (isRoot) {
     return (
-      <div className="tree">
-        <ul>
-          <li>{NodeAndChildren}</li>
-        </ul>
-      </div>
+      <Box className="tree" sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <Box component="ul" sx={{ p: 0, m: 0, listStyle: 'none' }}>
+          <Box component="li" sx={{ listStyle: 'none' }}>
+            {NodeAndChildren}
+          </Box>
+        </Box>
+      </Box>
     );
   }
 

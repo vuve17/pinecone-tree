@@ -17,7 +17,6 @@ import {
 import { showSnackbar } from "./store/notification.slice";
 import { AppDispatch, RootState } from "./store/store";
 import { ApiErrorResponse } from "./types/api-error-response.interface";
-import { buildBinaryTree } from "./utils/build-binary-tree";
 import { validateNodeDragAndDropMove } from "./utils/handle-drag-end-helper";
 
 export default function Home() {
@@ -79,11 +78,10 @@ export default function Home() {
 
   if (!mounted) return null;
   // CREATE
-  const handleCreate = async (parentId: number, ordering: number, title:
+  const handleCreate = async (parentId: number, title:
     string) => {
     try {
-      const createdNode = await nodeService.create(parentId, ordering,
-        title);
+      const createdNode = await nodeService.create(parentId, title);
       dispatch(createNode(createdNode));
       dispatch(showSnackbar({
         message: "Node created", severity: "success"
@@ -118,8 +116,13 @@ export default function Home() {
   const handleDelete = async (id: number) => {
     dispatch(showGlobalSpinner());
     try {
-      await nodeService.delete(id);
+      const response = await nodeService.delete(id);
       dispatch(removeNode(id));
+      if (response.updatedSiblings && response.updatedSiblings.length) {
+        for (const sibling of response.updatedSiblings) {
+          dispatch(editNode(sibling));
+        }
+      }
       dispatch(showSnackbar({
         message: "Node deleted", severity: "success"
       }));
@@ -135,39 +138,43 @@ export default function Home() {
     }
   };
 
-  const binaryTree = buildBinaryTree(nodes);
+  // MOVE
+  const handleMove = async (id: number, direction: -1 | 1) => {
+    try {
+      const updatedNode: Node[] = await nodeService.shift(id, direction);
+      for (const node of updatedNode) {
+        dispatch(editNode(node));
+      }
+      dispatch(showSnackbar({
+        message: "Node moved", severity: "success"
+      }));
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      dispatch(showSnackbar({
+        message: error?.response?.data?.error ?
+          error?.response?.data?.error : "Moving node failed", severity: "error"
+      }));
+    }
+  };
 
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveDraggingNode(null);
     try {
       const { active, over } = event;
-      if (!over || active.id === over.id) return;
-      const activeNodeId = active.id as number;
-      let newParentId: number;
-      let ordering: number | undefined;
-      if (!over.data.current) {
+      if (!over?.data?.current || active.id === over.id) {
         dispatch(showSnackbar({
           message: "Invalid drag & drop target", severity:
             "warning"
         }));
         return;
       }
-      if (over.data.current.placeholder) {
-        newParentId = over.data.current.parentNodeId;
-        ordering = over.data.current.ordering;
-      } else {
-        newParentId = over.data.current.parentNodeId;
-        ordering = over.data.current.ordering
-      }
+      const activeNodeId = active.id as number;
+      const newParentId = over.data.current.id as number;
 
-      const validation = validateNodeDragAndDropMove(nodes, active.data.current as Node,
-        over.data.current as Node, dispatch);
+      const validation = validateNodeDragAndDropMove(nodes, active.data.current as Node, over.data.current as Node, dispatch);
       if (!validation) return;
-      const updatedNode = await nodeService.reorder(activeNodeId, {
-        parentNodeId: newParentId,
-        ordering: ordering,
-      });
+      const updatedNode = await nodeService.reattach(activeNodeId, newParentId);
 
       dispatch(editNode(updatedNode));
       dispatch(showSnackbar({
@@ -194,6 +201,8 @@ export default function Home() {
       };
     };
   };
+
+  const rootNode = nodes.find(n => n.parentNodeId === null);
 
   return (
 
@@ -235,21 +244,21 @@ export default function Home() {
                 onConfirm={() => handleDelete(nodeToDelete.id)}
                 noText="Cancel"
                 yesText="Delete"
-                question={`Are you sure you want to delete 
-"${nodeToDelete.title} node"?`}
-                dialogText="Warning! This will also delete all of its 
-children nodes."
+                question={`Are you sure you want to delete "${nodeToDelete.title}" node?`}
+                dialogText="Warning! This will also delete all of its children nodes."
               />
             }
 
             <div className="flex justify-center pt-10">
-              {!isLoading && binaryTree ? (
+              {!isLoading && rootNode ? (
                 <RecursiveTree
-                  treeNode={binaryTree}
+                  currentNode={rootNode}
+                  allNodes={nodes}
                   onEdit={handleEdit}
                   onDelete={handleDeleteModalOpen}
                   onAddChild={handleCreate}
                   isThisNodeBeingDragged={activeDraggingNode}
+                  onMoveOrder={handleMove}
                 />
               ) : !isLoading && (
                 <p>No root node found. Seed your database.</p>

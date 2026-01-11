@@ -2,6 +2,8 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {
@@ -13,16 +15,16 @@ import {
   Typography
 } from '@mui/material';
 import { Node } from '@prisma/client';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 interface TreeNodeProps {
   node: Node;
   onEdit: (id: number, newTitle: string) => void;
   onDelete: (node: Node) => void;
-  onAddChild: (parentId: number, ordering: number, title: string) => void;
+  onAddChild: (parentId: number, title: string) => void;
+  // -1 = left, 1 = right
+  onMoveOrder: (nodeId: number, direction: -1 | 1) => void;
   dragHandleProps?: any;
-  canAddLeftChild?: boolean;
-  canAddRightChild?: boolean;
   isDraggingInternally?: boolean;
 }
 
@@ -31,8 +33,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   onEdit,
   onDelete,
   onAddChild,
-  canAddRightChild = true,
-  canAddLeftChild = true,
+  onMoveOrder,
   dragHandleProps,
   isDraggingInternally
 }) => {
@@ -40,19 +41,22 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState(node.title);
 
-
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
     id: node.id,
     data: node,
   });
 
+  const handleRename = useCallback(() => {
+    const trimmed = tempTitle.trim();
+    if (trimmed && trimmed !== node.title) {
+      onEdit(node.id, trimmed);
+    } else {
+      setTempTitle(node.title);
+    }
+    setIsEditing(false);
+  }, [tempTitle, node.id, node.title, onEdit]);
 
   const inputMemoContent = useMemo(() => {
-    const handleRename = () => {
-      onEdit(node.id, tempTitle);
-      setIsEditing(false);
-    };
-
     if (!isEditing) return (
       <Typography
         variant="subtitle2"
@@ -65,7 +69,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
       >
         {node.title}
       </Typography>
-    )
+    );
 
     return (
       <InputBase
@@ -75,10 +79,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         onChange={(e) => setTempTitle(e.target.value)}
         onBlur={handleRename}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') handleRename()
-          else if (e.key === 'Escape') { setIsEditing(false); }
+          if (e.key === 'Enter') handleRename();
+          else if (e.key === 'Escape') {
+            setTempTitle(node.title);
+            setIsEditing(false);
+          }
         }}
-        inputProps={{ inputprops: { min: 0, max: 10 } }}
         sx={{
           width: '100%',
           input: { textAlign: 'center', fontWeight: 'bold' },
@@ -86,9 +92,8 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           borderColor: 'primary.main',
         }}
       />
-    )
-
-  }, [isEditing, tempTitle, node.title, node.id, onEdit])
+    );
+  }, [isEditing, tempTitle, node.title, handleRename]);
 
   return (
     <Box
@@ -101,17 +106,80 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        outline: isOver ? '4px solid rgba(74, 222, 128, 0.5)' : 'none',
+        outline: isOver ? '3px solid #4ade80' : 'none',
+        outlineOffset: '2px',
         borderRadius: '8px',
+        transition: 'outline 0.2s ease',
       }}
     >
+      {isHovered && !isEditing && (
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            display: 'flex',
+            gap: 1,
+            zIndex: 15,
+            width: "192px",
+            justifyContent: node.id === 1 ? "center" : "space-between",
+          }}
+        >
+          {
+            node.id !== 1 && (
+              <Tooltip title="Move Left">
+                <IconButton
+                  size="small"
+                  onClick={() => onMoveOrder(node.id, -1)}
+                  sx={{ bgcolor: 'white', border: '1px solid #ccc', '&:hover': { bgcolor: '#f0f0f0' } }}
+                >
+                  <ArrowBackIosNewIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )
+          }
+          <Tooltip title="Add Child Node">
+            <IconButton
+              size="small"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onAddChild(node.id, `New Node`); }}
+              sx={{
+                p: 0,
+                m: 0,
+                bgcolor: 'transparent',
+                maxWidth: '40.32px',
+                maxHeight: '40.32px',
+                border: 0,
+                color: 'success.main',
+                zIndex: 10,
+                outline: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <AddCircleIcon />
+            </IconButton>
+          </Tooltip>
+          {
+            node.id !== 1 && (
+              <Tooltip title="Move Right">
+                <IconButton
+                  size="small"
+                  onClick={() => onMoveOrder(node.id, 1)}
+                  sx={{ bgcolor: 'white', border: '1px solid #ccc', '&:hover': { bgcolor: '#f0f0f0' } }}
+                >
+                  <ArrowForwardIosIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+        </Box>
+      )}
+
       <Paper
         {...dragHandleProps}
-        elevation={dragHandleProps?.isDragging ? 8 : 1}
+        elevation={isHovered ? 4 : 1}
         sx={{
           position: 'relative',
           width: 192,
-          height: 96,
+          height: 80,
           backgroundColor: 'white',
           border: '2px solid',
           borderColor: isHovered ? 'primary.main' : 'grey.200',
@@ -122,7 +190,6 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           justifyContent: 'center',
           p: 2,
           transition: 'all 0.2s',
-          boxShadow: isHovered ? '0 0 0 2px rgba(25, 118, 210, 0.1)' : 'none',
           cursor: isDraggingInternally ? 'grabbing' : isHovered ? 'grab' : 'default',
         }}
       >
@@ -135,8 +202,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
               display: 'flex',
               gap: 0.5,
               bgcolor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'grey.300',
+              border: '1px solid #ccc',
               borderRadius: 1,
               p: 0.5,
               zIndex: 20,
@@ -162,54 +228,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           </Box>
         )}
 
-
         {inputMemoContent}
-
-        {isHovered && canAddLeftChild && (
-          <Tooltip title="Add Left Child">
-            <IconButton
-              size="small"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); onAddChild(node.id, 2, `Node L`); }}
-              sx={{
-                position: 'absolute',
-                left: -16,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                bgcolor: 'background.paper',
-                color: 'success.main',
-                boxShadow: 2,
-                zIndex: 10,
-                '&:hover': { bgcolor: 'grey.50', color: 'success.dark' },
-              }}
-            >
-              <AddCircleIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-
-        {isHovered && canAddRightChild && (
-          <Tooltip title="Add Right Child">
-            <IconButton
-              size="small"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); onAddChild(node.id, 1, `Node R`); }}
-              sx={{
-                position: 'absolute',
-                right: -16,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                bgcolor: 'background.paper',
-                color: 'success.main',
-                boxShadow: 2,
-                zIndex: 10,
-                '&:hover': { bgcolor: 'grey.50', color: 'success.dark' },
-              }}
-            >
-              <AddCircleIcon />
-            </IconButton>
-          </Tooltip>
-        )}
       </Paper>
     </Box>
   );

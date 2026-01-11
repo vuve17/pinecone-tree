@@ -2,6 +2,7 @@
 
 import { Node } from "@prisma/client";
 import { apiClient } from "../app-client";
+import { ApiDeleteResponseType } from "../types/api-delete-response.type";
 import { getAllNodesType } from "../types/get-all.type";
 
 export const nodeService = {
@@ -10,21 +11,25 @@ export const nodeService = {
     return data.nodes;
   },
 
-  create: async (
-    parentNodeId: number,
-    ordering: number,
-    title: string
-  ): Promise<Node> => {
+  create: async (parentNodeId: number, title: string): Promise<Node> => {
     const { data } = await apiClient.post<Node>("/", {
       parentNodeId,
-      ordering,
       title,
     });
     return data;
   },
 
-  reorder: async (id: number, payload: Partial<Node>): Promise<Node> => {
-    const { data } = await apiClient.put<Node>(`/${id}`, payload);
+  reattach: async (id: number, parentNodeId: number): Promise<Node> => {
+    const { data } = await apiClient.patch<Node>(`/${id}/reattach`, {
+      parentNodeId,
+    });
+    return data;
+  },
+
+  shift: async (id: number, direction: -1 | 1): Promise<Node[]> => {
+    const { data } = await apiClient.patch<Node[]>(`/${id}/shift`, {
+      direction: direction,
+    });
     return data;
   },
 
@@ -33,7 +38,8 @@ export const nodeService = {
     return data;
   },
 
-  delete: async (id: number): Promise<void> => {
-    await apiClient.delete(`/${id}`);
+  delete: async (id: number): Promise<ApiDeleteResponseType> => {
+    const { data } = await apiClient.delete<ApiDeleteResponseType>(`/${id}`);
+    return data;
   },
 };

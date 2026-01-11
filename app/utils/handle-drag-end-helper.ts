@@ -10,10 +10,7 @@ export const validateNodeDragAndDropMove = (
   dispatch: AppDispatch
 ): boolean => {
   if (active.depth !== target.depth) {
-    const lowerDepthNode = active.depth < target.depth ? active : target;
-    const higherDepthNode = lowerDepthNode.id === target.id ? active : target;
-
-    if (isDescendant(nodes, lowerDepthNode.id, higherDepthNode.id)) {
+    if (isDescendant(nodes, active.id, target.id)) {
       dispatch(
         showSnackbar({
           message: "Cannot move a parent into its own descendant.",
