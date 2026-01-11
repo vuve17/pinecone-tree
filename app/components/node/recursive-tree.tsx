@@ -15,7 +15,6 @@ interface RecursiveTreeProps {
   onAddChild: (parentId: number, title: string) => void;
   onMoveOrder: (nodeId: number, direction: -1 | 1) => void;
   isRoot?: boolean;
-  isThisNodeBeingDragged?: Node | null;
 }
 
 export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
@@ -26,7 +25,6 @@ export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
   onAddChild,
   onMoveOrder,
   isRoot = true,
-  isThisNodeBeingDragged = null
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: currentNode.id,
@@ -43,17 +41,22 @@ export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
     transform: CSS.Translate.toString(transform),
     zIndex: isDragging ? 1000 : 1,
     position: 'relative' as const,
+    opacity: isDragging ? 0.9 : 1,
+    pointerEvents: (isDragging ? 'none' : 'auto') as any,
   };
 
-  const amIBeingDragged = isDragging || (isThisNodeBeingDragged?.id === currentNode.id);
   const hasChildren = children.length > 0;
-  const showVerticalLine = hasChildren && !amIBeingDragged;
 
   const NodeAndChildren = (
     <Box
       ref={setNodeRef}
       style={style}
-      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        transition: isDragging ? 'none' : 'transform 200ms ease'
+      }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
         <TreeNode
@@ -65,18 +68,20 @@ export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
           dragHandleProps={{ ...attributes, ...listeners }}
           isDraggingInternally={isDragging}
         />
-        {showVerticalLine && <Box sx={{ width: '1px', height: 32, bgcolor: 'grey.300' }} />}
+        {hasChildren && (
+          <Box sx={{ width: '1px', height: 32, bgcolor: 'grey.300' }} />
+        )}
       </Box>
 
-      {showVerticalLine && (
-        <Box sx={{ position: 'relative' }}>
+      {hasChildren && (
+        <Box sx={{ position: 'relative', width: '100%' }}>
           <Box
             sx={{
               position: 'absolute',
               top: 0,
               left: '50%',
               transform: 'translateX(-50%)',
-              width: 'calc(100% - 192px)',
+              width: children.length > 1 ? 'calc(100% - 192px)' : '0px',
               height: '1px',
               bgcolor: 'grey.300'
             }}
@@ -86,10 +91,7 @@ export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
             direction="row"
             justifyContent="center"
             spacing={4}
-            sx={{
-              opacity: isDragging ? 0 : 1,
-              pointerEvents: isDragging ? 'none' : 'auto'
-            }}
+            sx={{ mt: 0 }}
           >
             {children.map((child) => (
               <Box key={child.id} sx={{ position: 'relative', pt: 4 }}>
@@ -112,7 +114,6 @@ export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
                   onAddChild={onAddChild}
                   onMoveOrder={onMoveOrder}
                   isRoot={false}
-                  isThisNodeBeingDragged={amIBeingDragged ? currentNode : isThisNodeBeingDragged}
                 />
               </Box>
             ))}
@@ -124,12 +125,8 @@ export const RecursiveTree: React.FC<RecursiveTreeProps> = ({
 
   if (isRoot) {
     return (
-      <Box className="tree" sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <Box component="ul" sx={{ p: 0, m: 0, listStyle: 'none' }}>
-          <Box component="li" sx={{ listStyle: 'none' }}>
-            {NodeAndChildren}
-          </Box>
-        </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4, minWidth: 'max-content' }}>
+        {NodeAndChildren}
       </Box>
     );
   }
