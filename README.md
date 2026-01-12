@@ -41,8 +41,8 @@ Used for working with the full nodes collection and building the initial tree st
 
 | Method | Endpoint         | Purpose |
 |------:|------------------|---------|
-| GET   | `/api/nodes/:id` | Fetches detailed information about a specific node. |
-| PATCH | `/api/nodes/:id` | Updates basic node fields (e.g. renaming the title). |
+| GET   | `/api/nodes/:id` | Fetches detailed information about a specific node. | *UNUSED*
+| PATCH | `/api/nodes/:id` | Updates basic node fields (renaming the title). |
 | DELETE| `/api/nodes/:id` | Deletes the node and recursively removes its entire sub-tree (`onDelete: Cascade`). |
 
 ## 3. Drag & Drop (Grafting)
